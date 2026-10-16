@@ -1,64 +1,77 @@
 import React from 'react';
-import {AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig, Easing} from 'remotion';
+import {AbsoluteFill, Audio, staticFile, interpolate, Easing, useCurrentFrame, spring, useVideoConfig} from 'remotion';
 
-const C={red:'#E32A28',black:'#101014',cream:'#F8F1E4',yellow:'#F9D34D',blue:'#315DF4'};
+const C={red:'#E32A28',black:'#111115',cream:'#FFF7E9',yellow:'#FAD44F',blue:'#315DF4',mint:'#B8F5D0'};
+const clamp=(x:number)=>Math.max(0,Math.min(1,x));
 const ease=Easing.bezier(.22,1,.36,1);
-const clamp=(n:number,a:number,b:number)=>Math.max(a,Math.min(b,n));
-const between=(f:number,a:number,b:number)=>clamp((f-a)/(b-a),0,1);
-const slide=(f:number,a:number,b:number,from:number,to:number)=>interpolate(between(f,a,b),[0,1],[from,to],{easing:ease});
-const Txt:React.FC<{children:React.ReactNode;size:number;color?:string;style?:React.CSSProperties}> = ({children,size,color=C.cream,style})=><div style={{fontFamily:'Arial, Helvetica, sans-serif',fontWeight:900,fontSize:size,lineHeight:.91,letterSpacing:-size*.055,color,textTransform:'uppercase',...style}}>{children}</div>;
-const Scene:React.FC<{from:number;to:number;children:React.ReactNode}> = ({from,to,children})=>{const f=useCurrentFrame();return f>=from&&f<to?<AbsoluteFill>{children}</AbsoluteFill>:null};
-const Stripes:React.FC<{f:number;color?:string}> = ({f,color=C.black})=><svg width="1080" height="1920" viewBox="0 0 1080 1920" style={{position:'absolute'}}>{Array.from({length:22},(_,i)=><rect key={i} x={-500+i*105+Math.sin(f/16+i)*35} y="-300" width="32" height="2500" transform={`rotate(-25 540 960)`} fill={color} opacity={.13}/>)}</svg>;
-const BigNumber:React.FC<{value:string;f:number;start:number;left?:number;top?:number;size?:number;color?:string}> = ({value,f,start,left=80,top=580,size=400,color=C.cream})=><div style={{position:'absolute',left,top,transform:`translateY(${slide(f,start,start+18,280,0)}px) scale(${slide(f,start,start+22,.65,1)})`,opacity:between(f,start,start+8)}}><Txt size={size} color={color}>{value}</Txt></div>;
+const t=(f:number,a:number,b:number)=>clamp((f-a)/(b-a));
+const move=(f:number,a:number,b:number,x:number,y:number)=>interpolate(t(f,a,b),[0,1],[x,y],{easing:ease});
+const Text:React.FC<{children:React.ReactNode;size?:number;color?:string;style?:React.CSSProperties}> =({children,size=100,color=C.cream,style})=><div style={{fontFamily:'Arial,Helvetica,sans-serif',fontSize:size,fontWeight:900,lineHeight:.96,letterSpacing:-size*.04,color,textTransform:'uppercase',...style}}>{children}</div>;
+const Section:React.FC<{start:number;end:number;children:React.ReactNode}>=({start,end,children})=>{const f=useCurrentFrame();return f>=start&&f<end?<AbsoluteFill>{children}</AbsoluteFill>:null};
+const Tag:React.FC<{children:React.ReactNode;color?:string}>=({children,color=C.yellow})=><div style={{display:'inline-block',background:color,color:C.black,padding:'18px 28px',fontSize:34,fontFamily:'Arial',fontWeight:900,letterSpacing:2}}>{children}</div>;
+const Footer:React.FC<{text:string}>=({text})=><div style={{position:'absolute',bottom:100,left:65,right:65,fontFamily:'Arial',fontSize:29,fontWeight:700,color:C.cream,opacity:.9}}>{text}</div>;
+const Entrance:React.FC<{f:number;at:number;children:React.ReactNode;style?:React.CSSProperties}>=({f,at,children,style})=><div style={{transform:`translateY(${move(f,at,at+19,190,0)}px)`,opacity:t(f,at,at+10),...style}}>{children}</div>;
+const Diagonal:React.FC<{f:number}>=({f})=><svg width="1080" height="1920" style={{position:'absolute',inset:0,opacity:.14}}>{Array.from({length:16},(_,i)=><rect key={i} x={-800+i*170+Math.sin(f/22+i)*35} y="-400" width="42" height="2800" transform="rotate(-23 540 960)" fill="white"/>)}</svg>;
+const Transition:React.FC<{f:number;end:number;color:string}>=({f,end,color})=><div style={{position:'absolute',inset:-100,background:color,transform:`translateX(${move(f,end-17,end+1,-1500,0)}px) skewX(-12deg)`}}/>;
+const Card:React.FC<{f:number;at:number;children:React.ReactNode;top:number;color?:string}>=({f,at,children,top,color=C.cream})=><div style={{position:'absolute',top,left:65,width:950,background:color,color:C.black,padding:'38px 40px',borderRadius:8,boxShadow:'18px 20px 0 #111115',transform:`translateX(${move(f,at,at+20,1200,0)}px) rotate(-3deg)`}}>{children}</div>;
+const Bar:React.FC<{f:number;at:number;label:string;value:number;max:number;top:number;color:string;caption:string}>=({f,at,label,value,max,top,color,caption})=><div style={{position:'absolute',left:80,top,width:920}}><Text size={46}>{label}</Text><div style={{height:82,background:'#ffffff33',marginTop:22,borderRadius:8,overflow:'hidden'}}><div style={{height:'100%',width:`${(value/max)*100*t(f,at,at+36)}%`,background:color}}/></div><div style={{display:'flex',justifyContent:'space-between',fontFamily:'Arial',fontWeight:900,color:C.cream,fontSize:52,marginTop:12}}><span>{caption}</span><span>{value.toLocaleString('pt-BR')}%</span></div></div>;
 export const FactualVideo:React.FC=()=>{
- const f=useCurrentFrame(); const {fps}=useVideoConfig();
- const beat=(start:number)=>spring({frame:f-start,fps,config:{stiffness:140,damping:15}});
+ const f=useCurrentFrame();const {fps}=useVideoConfig();
+ const pulse=spring({frame:f%30,fps,config:{damping:20,stiffness:140}});
  return <AbsoluteFill style={{background:C.black,overflow:'hidden'}}>
- {/* 0-3s: dramatic typographic opening */}
- <Scene from={0} to={90}>
-  <AbsoluteFill style={{background:C.red}}><Stripes f={f}/></AbsoluteFill>
-  <div style={{position:'absolute',top:140,left:70,transform:`translateX(${slide(f,0,16,-1200,0)}px) rotate(-5deg)`}}><Txt size={220}>BRASIL</Txt></div>
-  <div style={{position:'absolute',top:490,left:60,transform:`translateX(${slide(f,9,26,1300,0)}px) rotate(3deg)`}}><Txt size={280} color={C.black}>EM FOCO</Txt></div>
-  <div style={{position:'absolute',left:75,top:980,width:930,height:260,background:C.yellow,transform:`rotate(-7deg) scaleX(${slide(f,25,43,0,1)})`}}/>
-  <div style={{position:'absolute',left:118,top:1030,transform:`translateY(${slide(f,30,47,230,0)}px) rotate(-7deg)`}}><Txt size={110} color={C.black}>GOVERNO</Txt><Txt size={175} color={C.black}>LULA</Txt></div>
-  <div style={{position:'absolute',left:80,bottom:155,fontFamily:'Arial',fontSize:37,fontWeight:800,letterSpacing:7,color:C.cream}}>POLÍTICAS PÚBLICAS  /  2023—</div>
-  <div style={{position:'absolute',left:0,top:0,width:1080,height:1920,background:C.black,transform:`translateX(${slide(f,78,90,-1100,0)}px) skewX(-12deg)`}}/>
- </Scene>
- {/* 3-6s: large headline and morphing ring */}
- <Scene from={90} to={180}>
-  <AbsoluteFill style={{background:C.black}}/>
-  <div style={{position:'absolute',top:130,left:65,transform:`translateY(${slide(f,90,108,240,0)}px)`}}><Txt size={106} color={C.yellow}>POLÍTICA</Txt><Txt size={190}>SOCIAL</Txt></div>
-  <svg style={{position:'absolute',top:620,left:-70,transform:`rotate(${(f-90)*2.4}deg) scale(${slide(f,90,123,.4,1)})`}} width="1220" height="1220" viewBox="0 0 1220 1220"><circle cx="610" cy="610" r="460" fill="none" stroke={C.red} strokeWidth="175" strokeDasharray="1750 1200" strokeLinecap="square"/><circle cx="610" cy="610" r="255" fill={C.yellow}/><path d="M460 620 L560 720 L780 470" stroke={C.black} strokeWidth="60" strokeLinecap="square" fill="none"/></svg>
-  <div style={{position:'absolute',bottom:150,left:70,transform:`translateX(${slide(f,117,137,-900,0)}px)`}}><Txt size={74}>O QUE MUDOU?</Txt></div>
-  <div style={{position:'absolute',inset:0,background:C.blue,transform:`scale(${slide(f,169,180,0,2)})`,borderRadius:'50%'}}/>
- </Scene>
- {/* 6-10s: policy visual as animated cards and scale bars */}
- <Scene from={180} to={300}>
-  <AbsoluteFill style={{background:C.blue}}><Stripes f={f} color={C.cream}/></AbsoluteFill>
-  <div style={{position:'absolute',top:145,left:65,transform:`translateX(${slide(f,180,200,-1100,0)}px)`}}><Txt size={110}>BOLSA</Txt><Txt size={192} color={C.yellow}>FAMÍLIA</Txt></div>
-  <div style={{position:'absolute',top:590,left:72,width:930,height:130,background:C.cream,transform:`rotate(-4deg) scaleX(${slide(f,205,225,0,1)})`}}/>
-  <div style={{position:'absolute',top:615,left:105,transform:`translateY(${slide(f,212,230,160,0)}px) rotate(-4deg)`}}><Txt size={75} color={C.black}>RETOMADO EM 2023</Txt></div>
-  {Array.from({length:9},(_,i)=>{const x=90+(i%3)*320,y=865+Math.floor(i/3)*240;const p=beat(225+i*4);return <div key={i} style={{position:'absolute',left:x,top:y,width:260,height:170,background:i%2?C.yellow:C.cream,borderRadius:15,transform:`translateY(${(1-p)*300}px) rotate(${(1-p)*20}deg) scale(${clamp(p,0,1)})`,boxShadow:'18px 18px 0 #101014'}}><div style={{fontFamily:'Arial',fontWeight:900,fontSize:100,color:C.black,textAlign:'center',paddingTop:18}}>{['+','✓','+','✓','+','✓','+','✓','+'][i]}</div></div>})}
-  <div style={{position:'absolute',bottom:70,left:72,fontFamily:'Arial',fontSize:32,fontWeight:700,color:C.cream}}>PROGRAMA DE TRANSFERÊNCIA DE RENDA</div>
-  <div style={{position:'absolute',inset:0,background:C.yellow,transform:`translateY(${slide(f,286,300,1920,0)}px) rotate(-3deg) scale(1.3)`}}/>
- </Scene>
- {/* 10-13s: sources & verification */}
- <Scene from={300} to={390}>
-  <AbsoluteFill style={{background:C.yellow}}/>
-  <div style={{position:'absolute',top:170,left:55,transform:`translateX(${slide(f,300,319,1200,0)}px)`}}><Txt size={180} color={C.black}>DADOS.</Txt><Txt size={170} color={C.red}>FONTES.</Txt><Txt size={157} color={C.black}>CONTEXTO.</Txt></div>
-  <svg width="1080" height="950" style={{position:'absolute',top:860}}><g transform={`rotate(${(f-300)*1.6} 540 430)`}><circle cx="540" cy="430" r="360" fill={C.black}/><circle cx="540" cy="430" r="260" fill="none" stroke={C.cream} strokeWidth="30" strokeDasharray="20 45"/><circle cx="540" cy="430" r="125" fill={C.red}/></g></svg>
-  <div style={{position:'absolute',bottom:110,left:80,fontFamily:'Arial',fontSize:40,fontWeight:900,color:C.black,background:C.cream,padding:'20px 35px',transform:`rotate(-4deg) scale(${slide(f,325,342,.5,1)})`}}>VERIFIQUE ANTES DE COMPARTILHAR</div>
-  <div style={{position:'absolute',inset:0,background:C.red,transform:`translateX(${slide(f,379,390,-1100,0)}px)`}}/>
- </Scene>
- {/* 13-15s: branded end card */}
- <Scene from={390} to={450}>
-  <AbsoluteFill style={{background:C.red}}><Stripes f={f}/></AbsoluteFill>
-  <div style={{position:'absolute',top:460,left:55,transform:`scale(${slide(f,390,410,.4,1)}) rotate(${slide(f,390,410,-15,0)}deg)`}}><Txt size={200}>BRASIL</Txt><Txt size={205} color={C.yellow}>EM FOCO</Txt></div>
-  <div style={{position:'absolute',top:1110,left:70,width:930,height:18,background:C.black,transform:`scaleX(${slide(f,406,424,0,1)})`,transformOrigin:'left'}}/>
-  <div style={{position:'absolute',top:1190,left:70,transform:`translateY(${slide(f,413,430,170,0)}px)`}}><Txt size={69}>POLÍTICA COM</Txt><Txt size={102} color={C.black}>CONTEXTO.</Txt></div>
-  <div style={{position:'absolute',bottom:140,left:70,fontFamily:'Arial',fontSize:32,fontWeight:800,color:C.cream,letterSpacing:4}}>PROTÓTIPO VISUAL • SEM NARRAÇÃO</div>
- </Scene>
- {/* subtle animated film grain dots */}
- <svg style={{position:'absolute',inset:0,pointerEvents:'none',opacity:.1}} width="1080" height="1920"><defs><pattern id="dots" width="32" height="32" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.5" fill="white"/></pattern></defs><rect width="1080" height="1920" fill="url(#dots)"/></svg>
+  <Audio src={staticFile('trilha.mp3')} volume={0.17}/>
+  {/* To add narration, upload narracao.mp3 to public and uncomment the following line */}
+  {/* <Audio src={staticFile('narracao.mp3')} volume={1}/> */}
+  <Section start={0} end={270}>
+   <AbsoluteFill style={{background:C.red}}/><Diagonal f={f}/>
+   <Entrance f={f} at={3} style={{position:'absolute',top:235,left:55,transform:`rotate(-5deg)`}}><Text size={190}>BRASIL</Text></Entrance>
+   <Entrance f={f} at={23} style={{position:'absolute',top:490,left:55}}><Text size={215} color={C.black}>EM NÚMEROS</Text></Entrance>
+   <div style={{position:'absolute',top:855,left:60,width:955,height:320,background:C.yellow,transform:`scaleX(${t(f,45,75)}) rotate(-5deg)`}}/>
+   <Entrance f={f} at={55} style={{position:'absolute',top:900,left:100,transform:'rotate(-5deg)'}}><Text size={155} color={C.black}>GOVERNO</Text><Text size={195} color={C.black}>LULA</Text></Entrance>
+   <Entrance f={f} at={115} style={{position:'absolute',top:1370,left:75}}><Text size={69}>O QUE DIZEM</Text><Text size={91} color={C.yellow}>OS DADOS?</Text></Entrance>
+   <Footer text="POLÍTICAS PÚBLICAS • 2023–2025"/><Transition f={f} end={270} color={C.blue}/>
+  </Section>
+  <Section start={270} end={570}>
+   <AbsoluteFill style={{background:C.blue}}/><Diagonal f={f}/>
+   <Entrance f={f} at={277} style={{position:'absolute',top:140,left:65}}><Text size={125}>BOLSA</Text><Text size={183} color={C.yellow}>FAMÍLIA</Text></Entrance>
+   <Card f={f} at={300} top={580}><Text size={62} color={C.black}>REFORMULADO</Text><Text size={130} color={C.red}>EM 2023</Text></Card>
+   <Entrance f={f} at={355} style={{position:'absolute',top:930,left:70}}><Text size={65}>VALOR MÍNIMO</Text><Text size={250} color={C.yellow}>R$ 600</Text><Text size={50}>POR FAMÍLIA ELEGÍVEL</Text></Entrance>
+   <div style={{position:'absolute',top:1390,left:70,width:900,height:140,background:C.yellow,transform:`scaleX(${t(f,425,480)})`,transformOrigin:'left'}}/>
+   <Entrance f={f} at={440} style={{position:'absolute',top:1422,left:90}}><Text size={57} color={C.black}>+ ADICIONAIS POR CRIANÇA</Text></Entrance>
+   <Footer text="Fonte: Lei 14.601/2023 • MDS"/><Transition f={f} end={570} color={C.yellow}/>
+  </Section>
+  <Section start={570} end={870}>
+   <AbsoluteFill style={{background:C.yellow}}/>
+   <Entrance f={f} at={575} style={{position:'absolute',top:160,left:55}}><Text size={104} color={C.black}>JUNHO / 2025</Text><Text size={90} color={C.red}>ALCANCE SOCIAL</Text></Entrance>
+   <div style={{position:'absolute',top:620,left:60,transform:`scale(${move(f,600,650,.4,1)})`,transformOrigin:'left center'}}><Text size={210} color={C.black}>20,5</Text><Text size={135} color={C.red}>MILHÕES</Text><Text size={64} color={C.black}>DE FAMÍLIAS</Text></div>
+   <svg width="1000" height="400" style={{position:'absolute',top:1170,left:40}}>{Array.from({length:35},(_,i)=>{const x=(i%7)*135+35,y=Math.floor(i/7)*75+10;const v=t(f,655+i*2,675+i*2);return <g key={i} opacity={v} transform={`translate(${x} ${y}) scale(${v})`}><circle cx="25" cy="18" r="16" fill={i%3===0?C.red:C.black}/><rect x="3" y="39" width="44" height="34" rx="8" fill={i%3===0?C.red:C.black}/></g>})}</svg>
+   <div style={{position:'absolute',top:1660,left:60,right:60}}><Text size={40} color={C.black}>20.499.027 FAMÍLIAS NO MÊS</Text></div>
+   <div style={{position:'absolute',bottom:95,left:60,fontFamily:'Arial',fontSize:29,color:C.black,fontWeight:700}}>Fonte: MDS, informe nº 086, julho de 2025</div>
+   <Transition f={f} end={870} color={C.black}/>
+  </Section>
+  <Section start={870} end={1170}>
+   <AbsoluteFill style={{background:C.black}}/>
+   <Entrance f={f} at={875} style={{position:'absolute',top:130,left:60}}><Text size={114} color={C.yellow}>POBREZA</Text><Text size={78}>2022 × 2023</Text></Entrance>
+   <Bar f={f} at={915} top={560} label="2022" value={31.6} max={40} color={C.red} caption="PESSOAS ABAIXO DA LINHA"/>
+   <Bar f={f} at={960} top={1000} label="2023" value={27.4} max={40} color={C.mint} caption="PESSOAS ABAIXO DA LINHA"/>
+   <Entrance f={f} at={1030} style={{position:'absolute',top:1500,left:75}}><Text size={84} color={C.yellow}>QUEDA DE</Text><Text size={110}>4,2 P.P.</Text></Entrance>
+   <Footer text="IBGE • Síntese de Indicadores Sociais 2024"/><Transition f={f} end={1170} color={C.red}/>
+  </Section>
+  <Section start={1170} end={1470}>
+   <AbsoluteFill style={{background:C.red}}/><Diagonal f={f}/>
+   <Entrance f={f} at={1175} style={{position:'absolute',top:130,left:60}}><Text size={150}>ECONOMIA</Text><Text size={78} color={C.yellow}>CRESCIMENTO REAL DO PIB</Text></Entrance>
+   <Card f={f} at={1220} top={620} color={C.cream}><Text size={80} color={C.black}>2024</Text><Text size={180} color={C.blue}>+3,4%</Text></Card>
+   <Card f={f} at={1295} top={1060} color={C.yellow}><Text size={80} color={C.black}>2025</Text><Text size={180} color={C.black}>+2,3%</Text></Card>
+   <Footer text="Fonte: IBGE • Contas Nacionais"/><Transition f={f} end={1470} color={C.yellow}/>
+  </Section>
+  <Section start={1470} end={1800}>
+   <AbsoluteFill style={{background:C.yellow}}/>
+   <Entrance f={f} at={1475} style={{position:'absolute',top:145,left:60}}><Text size={130} color={C.black}>MAS ATENÇÃO</Text><Text size={95} color={C.red}>CONTEXTO</Text></Entrance>
+   <Entrance f={f} at={1530} style={{position:'absolute',top:610,left:60}}><Text size={78} color={C.black}>NENHUM DADO</Text><Text size={81} color={C.black}>EXPLICA TUDO</Text></Entrance>
+   {['INFLAÇÃO','EMPREGO','CENÁRIO EXTERNO'].map((x,i)=><Card key={x} f={f} at={1575+i*30} top={945+i*180} color={i===1?C.red:C.cream}><Text size={67} color={i===1?C.cream:C.black}>{x}</Text></Card>)}
+   <div style={{position:'absolute',top:1630,left:60,right:60}}><Text size={65} color={C.black}>COMPARE COM</Text><Text size={90} color={C.red}>FONTES.</Text></div>
+   <div style={{position:'absolute',bottom:95,left:60,fontFamily:'Arial',fontSize:30,color:C.black,fontWeight:700}}>FONTES E LINKS NO README • BRASIL EM FOCO</div>
+  </Section>
+  <svg width="1080" height="1920" style={{position:'absolute',inset:0,opacity:.07,pointerEvents:'none'}}><defs><pattern id="grain" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.2" fill="white"/></pattern></defs><rect width="1080" height="1920" fill="url(#grain)"/></svg>
  </AbsoluteFill>;
 };
