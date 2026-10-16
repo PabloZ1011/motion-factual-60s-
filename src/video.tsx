@@ -21,7 +21,10 @@ export const FactualVideo:React.FC=()=>{
  return <AbsoluteFill style={{background:C.black,overflow:'hidden'}}>
   <Audio src={staticFile('trilha.mp3')} volume={0.17}/>
   {/* To add narration, upload narracao.mp3 to public and uncomment the following line */}
-  {/* <Audio src={staticFile('narracao.mp3')} volume={1}/> */}
+  <Audio
+  src={staticFile('narracao.mp3')}
+  volume={1}
+/>
   <Section start={0} end={270}>
    <AbsoluteFill style={{background:C.red}}/><Diagonal f={f}/>
    <Entrance f={f} at={3} style={{position:'absolute',top:235,left:55,transform:`rotate(-5deg)`}}><Text size={190}>BRASIL</Text></Entrance>
