@@ -20,11 +20,8 @@ export const FactualVideo:React.FC=()=>{
  const pulse=spring({frame:f%30,fps,config:{damping:20,stiffness:140}});
  return <AbsoluteFill style={{background:C.black,overflow:'hidden'}}>
   <Audio src={staticFile('trilha.mp3')} volume={0.17}/>
-  {/* To add narration, upload narracao.mp3 to public and uncomment the following line */}
-  <Audio
-  src={staticFile('narracao.mp3')}
-  volume={1}
-/>
+  {/* Narracao sincronizada desde o primeiro frame. */}
+  <Audio src={staticFile('narracao.mp3')} volume={1}/>
   <Section start={0} end={270}>
    <AbsoluteFill style={{background:C.red}}/><Diagonal f={f}/>
    <Entrance f={f} at={3} style={{position:'absolute',top:235,left:55,transform:`rotate(-5deg)`}}><Text size={190}>BRASIL</Text></Entrance>
@@ -67,7 +64,7 @@ export const FactualVideo:React.FC=()=>{
    <Card f={f} at={1295} top={1060} color={C.yellow}><Text size={80} color={C.black}>2025</Text><Text size={180} color={C.black}>+2,3%</Text></Card>
    <Footer text="Fonte: IBGE • Contas Nacionais"/><Transition f={f} end={1470} color={C.yellow}/>
   </Section>
-  <Section start={1470} end={1800}>
+  <Section start={1470} end={1890}>
    <AbsoluteFill style={{background:C.yellow}}/>
    <Entrance f={f} at={1475} style={{position:'absolute',top:145,left:60}}><Text size={130} color={C.black}>MAS ATENÇÃO</Text><Text size={95} color={C.red}>CONTEXTO</Text></Entrance>
    <Entrance f={f} at={1530} style={{position:'absolute',top:610,left:60}}><Text size={78} color={C.black}>NENHUM DADO</Text><Text size={81} color={C.black}>EXPLICA TUDO</Text></Entrance>
